@@ -20,7 +20,7 @@ DOMAIN=kostya-i-gera.ru
 echo "==> Installing system packages"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq python3-venv python3-pip nginx certbot python3-certbot-nginx dnsutils curl >/dev/null
+apt-get install -y -qq git python3-venv python3-pip nginx certbot python3-certbot-nginx dnsutils curl >/dev/null
 
 echo "==> Creating service user '$SVC_USER'"
 id "$SVC_USER" &>/dev/null || useradd --system --no-create-home --shell /usr/sbin/nologin "$SVC_USER"
