@@ -1,0 +1,26 @@
+[Unit]
+Description=Svadba wedding RSVP (gunicorn)
+After=network.target
+
+[Service]
+User=svadba
+Group=svadba
+WorkingDirectory=/opt/svadba/app
+EnvironmentFile=/opt/svadba/svadba.env
+ExecStart=/opt/svadba/venv/bin/gunicorn \
+    --workers 2 --threads 4 --timeout 30 \
+    --bind 127.0.0.1:8000 \
+    --access-logfile - --error-logfile - \
+    main:app
+Restart=always
+RestartSec=3
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/svadba/data
+
+[Install]
+WantedBy=multi-user.target

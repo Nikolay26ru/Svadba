@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Вход — Админ-панель{% endblock %}
+{% block body %}
+<section class="card center narrow">
+  <h1>Админ-панель</h1>
+  <p class="muted">Свадьба · ответы гостей</p>
+  {% if error %}<div class="banner err">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ url_for('admin_do_login') }}" class="login">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <input type="password" name="password" placeholder="Пароль" autocomplete="current-password"
+           autofocus required>
+    <button type="submit" class="submit-btn">Войти</button>
+  </form>
+</section>
+{% endblock %}

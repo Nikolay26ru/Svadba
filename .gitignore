@@ -1,0 +1,17 @@
+# Secrets & runtime data — never commit
+*.env
+svadba.env
+.env
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# OS
+.DS_Store

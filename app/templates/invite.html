@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Приглашение на свадьбу{% endblock %}
+{% block body %}
+{% set current = inv['response'] %}
+<section class="card center">
+  <div class="emblem">💍</div>
+  <h1 class="invite-title">Приглашаю тебя на свадьбу</h1>
+  <p class="date">{{ wedding_date }}</p>
+
+  {% if saved %}
+    <div class="banner ok">Спасибо, ваш ответ записан.</div>
+  {% endif %}
+  {% if error %}
+    <div class="banner err">{{ error }}</div>
+  {% endif %}
+
+  {% if current and not error %}
+    <div class="current">
+      Ваш ответ: <b>{{ 'Принято' if current == 'accept' else 'Отклонено' }}</b>
+      {% if inv['guest_name'] %}<span class="muted">· {{ inv['guest_name'] }}</span>{% endif %}
+      <div class="muted small">Можно изменить ниже.</div>
+    </div>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('invite_submit', token=token) }}" id="rsvpForm" class="rsvp">
+    <input type="hidden" name="response" id="responseField"
+           value="{{ form_response or current or '' }}">
+
+    <div class="choices">
+      <button type="button" class="choice accept" data-choice="accept">Принять</button>
+      <button type="button" class="choice decline" data-choice="decline">Отклонить</button>
+    </div>
+
+    <div class="name-block" id="nameBlock">
+      <input type="text" name="name" id="nameField" placeholder="Имя и фамилия"
+             autocomplete="name" maxlength="120"
+             value="{{ form_name or inv['guest_name'] or '' }}">
+      <button type="submit" class="submit-btn">Отправить</button>
+    </div>
+
+    <noscript>
+      <div class="name-block-ns">
+        <p class="muted small">Укажите имя и фамилию, затем выберите ответ:</p>
+        <input type="text" name="name" placeholder="Имя и фамилия" maxlength="120"
+               value="{{ form_name or inv['guest_name'] or '' }}">
+        <div class="choices">
+          <button type="submit" name="response" value="accept" class="choice accept">Принять</button>
+          <button type="submit" name="response" value="decline" class="choice decline">Отклонить</button>
+        </div>
+      </div>
+    </noscript>
+  </form>
+</section>
+
+<script>
+(function () {
+  var form = document.getElementById('rsvpForm');
+  if (!form) return;
+  var rf = document.getElementById('responseField');
+  var nameBlock = document.getElementById('nameBlock');
+  var nameField = document.getElementById('nameField');
+  var choices = form.querySelectorAll('.choices .choice');
+
+  function select(val, focus) {
+    rf.value = val;
+    choices.forEach(function (b) {
+      b.classList.toggle('selected', b.getAttribute('data-choice') === val);
+    });
+    nameBlock.classList.add('show');
+    if (focus && nameField) { nameField.focus(); }
+  }
+
+  if (rf.value === 'accept' || rf.value === 'decline') {
+    select(rf.value, false);
+  }
+
+  choices.forEach(function (b) {
+    b.addEventListener('click', function () { select(b.getAttribute('data-choice'), true); });
+  });
+
+  form.addEventListener('submit', function (e) {
+    if (rf.value !== 'accept' && rf.value !== 'decline') {
+      e.preventDefault();
+      alert('Пожалуйста, выберите «Принять» или «Отклонить».');
+      return;
+    }
+    if (!nameField.value.trim()) {
+      e.preventDefault();
+      nameField.focus();
+      alert('Пожалуйста, укажите имя и фамилию.');
+    }
+  });
+})();
+</script>
+{% endblock %}

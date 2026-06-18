@@ -1,0 +1,8 @@
+[Unit]
+Description=Issue Let's Encrypt cert for svadba once DNS points here
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/svadba/deploy/autocert-check.sh

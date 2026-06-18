@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Админ-панель — Свадьба{% endblock %}
+{% block body %}
+<section class="admin">
+  <div class="admin-head">
+    <h1>Свадьба — ответы гостей</h1>
+    <form method="post" action="{{ url_for('admin_logout') }}">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <button class="link-btn" type="submit">Выйти</button>
+    </form>
+  </div>
+
+  <div class="counters">
+    <div class="counter"><span class="num">{{ total }}</span><span class="lbl">Всего ссылок</span></div>
+    <div class="counter ok"><span class="num">{{ accepted }}</span><span class="lbl">Приняли</span></div>
+    <div class="counter no"><span class="num">{{ declined }}</span><span class="lbl">Отклонили</span></div>
+    <div class="counter wait"><span class="num">{{ pending }}</span><span class="lbl">Не ответили</span></div>
+  </div>
+
+  <form method="post" action="{{ url_for('admin_generate') }}" class="gen">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <button class="submit-btn" type="submit">+ Сгенерировать ссылку</button>
+  </form>
+
+  {% if new_token %}
+    {% set nurl = invite_url(new_token) %}
+    <div class="newlink">
+      <span class="muted small">Новая ссылка — скопируйте и отправьте гостю:</span>
+      <div class="newlink-row">
+        <code>{{ nurl }}</code>
+        <button class="copy" type="button" data-url="{{ nurl }}">Копировать</button>
+      </div>
+    </div>
+  {% endif %}
+
+  <h2>Ссылки</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Персональная ссылка</th><th>Статус</th></tr></thead>
+      <tbody>
+        {% for i in invites %}
+          {% set u = invite_url(i['token']) %}
+          <tr>
+            <td>{{ loop.revindex }}</td>
+            <td class="linkcell">
+              <code>{{ u }}</code>
+              <button class="copy" type="button" data-url="{{ u }}">Копировать</button>
+            </td>
+            <td>
+              {% if i['response'] == 'accept' %}<span class="badge ok">Принял</span>
+              {% elif i['response'] == 'decline' %}<span class="badge no">Отклонил</span>
+              {% else %}<span class="badge wait">Ожидает</span>{% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="3" class="muted">Пока нет ссылок. Нажмите «Сгенерировать ссылку».</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Ответы</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Имя и фамилия</th><th>Ответ</th><th>Дата и время</th></tr></thead>
+      <tbody>
+        {% for i in responses %}
+          <tr>
+            <td>{{ i['guest_name'] }}</td>
+            <td>
+              {% if i['response'] == 'accept' %}<span class="badge ok">Принял</span>
+              {% else %}<span class="badge no">Отклонил</span>{% endif %}
+            </td>
+            <td>{{ i['responded_at']|dt }} <span class="muted small">МСК</span></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="3" class="muted">Ответов пока нет.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('.copy');
+  if (!b) return;
+  var url = b.getAttribute('data-url');
+  function done() {
+    var prev = b.textContent;
+    b.textContent = 'Скопировано ✓';
+    setTimeout(function () { b.textContent = prev; }, 1500);
+  }
+  function fallback(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (err) {}
+    document.body.removeChild(ta);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(done, function () { fallback(url); done(); });
+  } else {
+    fallback(url); done();
+  }
+});
+</script>
+{% endblock %}
