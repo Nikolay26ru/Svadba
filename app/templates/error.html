@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% block title %}{{ code }}{% endblock %}
 {% block body %}
-<section class="card center">
-  <div class="emblem">💌</div>
-  <h1>{{ code }}</h1>
-  <p>{{ message }}</p>
-</section>
+<section class="card center"><div class="stack stagger">
+  <div class="seal"><span class="monogram"><span>К</span><span class="star">✦</span><span>Г</span></span></div>
+  <h1>{{ 'Ссылка недействительна' if code == 404 else 'Что-то пошло не так' }}</h1>
+  <p class="muted">{{ message }}</p>
+  <div class="divider"><span class="mark">✦</span></div>
+  <p class="eyebrow">Ошибка {{ code }}</p>
+</div></section>
 {% endblock %}

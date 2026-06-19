@@ -1,9 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Админ-панель — Свадьба{% endblock %}
+{% block title %}Админка · Костя & Гера{% endblock %}
 {% block body %}
 <section class="admin">
   <div class="admin-head">
-    <h1>Свадьба — ответы гостей</h1>
+    <div class="title-wrap">
+      <div class="monogram"><span>К</span><span class="star">✦</span><span>Г</span></div>
+      <h1>Ответы гостей</h1>
+    </div>
     <form method="post" action="{{ url_for('admin_logout') }}">
       <input type="hidden" name="csrf" value="{{ csrf_token() }}">
       <button class="link-btn" type="submit">Выйти</button>
@@ -25,7 +28,7 @@
   {% if new_token %}
     {% set nurl = invite_url(new_token) %}
     <div class="newlink">
-      <span class="muted small">Новая ссылка — скопируйте и отправьте гостю:</span>
+      <span class="muted">Новая ссылка — скопируйте и отправьте гостю</span>
       <div class="newlink-row">
         <code>{{ nurl }}</code>
         <button class="copy" type="button" data-url="{{ nurl }}">Копировать</button>
@@ -34,7 +37,7 @@
   {% endif %}
 
   <details class="settings"{% if saved_settings or mail_status %} open{% endif %}>
-    <summary>📧 Уведомления на e-mail</summary>
+    <summary>Уведомления на e-mail</summary>
     <div class="settings-body">
       {% if saved_settings %}<div class="banner ok">Адреса сохранены.</div>{% endif %}
       {% if mail_status == 'ok' %}<div class="banner ok">Письмо отправлено.</div>{% endif %}
@@ -44,7 +47,7 @@
 
       <form method="post" action="{{ url_for('admin_settings') }}">
         <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-        <label class="muted small" for="notify_emails">Куда присылать уведомления (можно несколько через запятую):</label>
+        <label for="notify_emails">Куда присылать уведомления (можно несколько через запятую)</label>
         <input type="text" id="notify_emails" name="notify_emails" value="{{ notify_emails }}"
                placeholder="you@example.com, partner@example.com" autocomplete="off" spellcheck="false">
         <button type="submit" class="submit-btn">Сохранить</button>
@@ -61,7 +64,7 @@
         </form>
       </div>
       <p class="muted small">При каждом ответе гостя на эти адреса приходит письмо: имя, принял/отклонил,
-        время и текущий счёт. «Сводка» — список всех принявших и отказавшихся. Отправитель — info@kostya-i-gera.ru.</p>
+        время и поимённый список. «Сводка» — список всех принявших и отказавшихся. Отправитель — info@kostya-i-gera.ru.</p>
     </div>
   </details>
 
@@ -138,7 +141,7 @@
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest('.copy');
-  if (!b) return;
+  if (!b || !b.getAttribute('data-url')) return;
   var url = b.getAttribute('data-url');
   function done() {
     var prev = b.textContent;

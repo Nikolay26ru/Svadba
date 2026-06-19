@@ -5,11 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
   <title>{% block title %}Приглашение на свадьбу{% endblock %}</title>
+  <script>document.documentElement.className += ' js';</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;0,600;1,500&family=Inter:wght@400;500;600&family=Marck+Script&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <main class="wrap">
     {% block body %}{% endblock %}
   </main>
+  <script>
+  (function () {
+    function reveal() {
+      document.querySelectorAll('.stagger').forEach(function (el) { el.classList.add('in'); });
+      document.querySelectorAll('.confirm-seal').forEach(function (el) { el.classList.add('play'); });
+    }
+    if (document.readyState !== 'loading') { setTimeout(reveal, 40); }
+    else { document.addEventListener('DOMContentLoaded', function () { setTimeout(reveal, 40); }); }
+  })();
+  </script>
 </body>
 </html>

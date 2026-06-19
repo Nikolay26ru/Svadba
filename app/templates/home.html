@@ -1,10 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Свадьба {{ wedding_date }}{% endblock %}
+{% block title %}Костя & Гера · {{ wedding_date }}{% endblock %}
 {% block body %}
-<section class="card center">
-  <div class="emblem">💍</div>
-  <h1>Свадьба</h1>
+<section class="card center"><div class="stack stagger">
+  <div class="monogram"><span>К</span><span class="star">✦</span><span>Г</span></div>
+  <h1 class="names">Костя <span class="amp">&amp;</span> Гера</h1>
   <p class="date">{{ wedding_date }}</p>
-  <p class="muted">Приглашения рассылаются персональными ссылками.</p>
-</section>
+  <div class="divider"><span class="mark">✦</span></div>
+  <p class="muted small">Приглашения отправляются персональными ссылками.</p>
+</div></section>
 {% endblock %}
