@@ -182,15 +182,28 @@ def notify_recipients():
     return emails
 
 
-def response_counts():
+def summary_block():
+    """Named lists of who accepted / declined + pending count, for e-mails."""
     conn = db.connect()
     try:
-        rows = conn.execute("SELECT response FROM invites").fetchall()
+        rows = conn.execute(
+            "SELECT response, guest_name FROM invites ORDER BY responded_at"
+        ).fetchall()
     finally:
         conn.close()
-    accepted = sum(1 for r in rows if r["response"] == "accept")
-    declined = sum(1 for r in rows if r["response"] == "decline")
-    return accepted, declined, len(rows) - accepted - declined
+    acc = [r["guest_name"] for r in rows if r["response"] == "accept" and r["guest_name"]]
+    dec = [r["guest_name"] for r in rows if r["response"] == "decline" and r["guest_name"]]
+    pending = sum(1 for r in rows if r["response"] not in ("accept", "decline"))
+    parts = [
+        "ПРИНЯЛИ (%d):" % len(acc),
+        "\n".join("  • " + n for n in acc) if acc else "  —",
+        "",
+        "ОТКЛОНИЛИ (%d):" % len(dec),
+        "\n".join("  • " + n for n in dec) if dec else "  —",
+        "",
+        "Не ответили: %d" % pending,
+    ]
+    return "\n".join(parts)
 
 
 # --------------------------------------------------------------------------
@@ -251,15 +264,10 @@ def invite_submit(token):
         conn.close()
 
     human = "Принял(а) приглашение" if response == "accept" else "Отклонил(а) приглашение"
-    accepted, declined, pending = response_counts()
     mailer.notify(
         subject="Свадьба: %s — %s" % (name, "Принял" if response == "accept" else "Отклонил"),
-        body=("Гость: %s\nОтвет: %s\nВремя (МСК): %s\n\n"
-              "Текущий счёт:\n"
-              "  Приняли:      %d\n"
-              "  Отклонили:    %d\n"
-              "  Не ответили:  %d\n"
-              % (name, human, fmt_dt(now_iso()), accepted, declined, pending)),
+        body=("Гость: %s\nОтвет: %s\nВремя (МСК): %s\n\n%s\n"
+              % (name, human, fmt_dt(now_iso()), summary_block())),
         recipients=notify_recipients(),
     )
     return redirect(url_for("invite", token=token, saved="1"))
@@ -378,26 +386,50 @@ def admin_summary():
     recipients = notify_recipients()
     if not recipients:
         return redirect(url_for("admin_dashboard", mail="noaddr"))
-    conn = db.connect()
-    try:
-        invites = conn.execute("SELECT * FROM invites ORDER BY responded_at").fetchall()
-    finally:
-        conn.close()
-    acc = [i["guest_name"] for i in invites if i["response"] == "accept" and i["guest_name"]]
-    dec = [i["guest_name"] for i in invites if i["response"] == "decline" and i["guest_name"]]
-    accepted, declined, pending = response_counts()
-    body = (
-        "Сводка ответов на %s (МСК)\n\n"
-        "ПРИНЯЛИ (%d):\n%s\n\n"
-        "ОТКЛОНИЛИ (%d):\n%s\n\n"
-        "Не ответили: %d\n"
-        % (fmt_dt(now_iso()),
-           accepted, "\n".join("  • " + n for n in acc) or "  —",
-           declined, "\n".join("  • " + n for n in dec) or "  —",
-           pending)
-    )
+    body = "Сводка ответов на %s (МСК)\n\n%s\n" % (fmt_dt(now_iso()), summary_block())
     ok, _ = mailer.send_now("Свадьба: сводка ответов", body, recipients)
     return redirect(url_for("admin_dashboard", mail=("ok" if ok else "err")))
+
+
+@app.route(ADMIN + "/delete/<token>", methods=["POST"])
+@admin_required
+def admin_delete(token):
+    check_csrf()
+    conn = db.connect()
+    try:
+        conn.execute("DELETE FROM invites WHERE token=?", (token,))
+        conn.commit()
+    finally:
+        conn.close()
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route(ADMIN + "/clear-responses", methods=["POST"])
+@admin_required
+def admin_clear_responses():
+    check_csrf()
+    conn = db.connect()
+    try:
+        conn.execute(
+            "UPDATE invites SET response=NULL, guest_name=NULL, responded_at=NULL"
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route(ADMIN + "/delete-all", methods=["POST"])
+@admin_required
+def admin_delete_all():
+    check_csrf()
+    conn = db.connect()
+    try:
+        conn.execute("DELETE FROM invites")
+        conn.commit()
+    finally:
+        conn.close()
+    return redirect(url_for("admin_dashboard"))
 
 
 @app.route(ADMIN + "/logout", methods=["POST"])

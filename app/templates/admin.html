@@ -68,7 +68,7 @@
   <h2>Ссылки</h2>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>#</th><th>Персональная ссылка</th><th>Статус</th></tr></thead>
+      <thead><tr><th>#</th><th>Персональная ссылка</th><th>Статус</th><th></th></tr></thead>
       <tbody>
         {% for i in invites %}
           {% set u = invite_url(i['token']) %}
@@ -83,9 +83,16 @@
               {% elif i['response'] == 'decline' %}<span class="badge no">Отклонил</span>
               {% else %}<span class="badge wait">Ожидает</span>{% endif %}
             </td>
+            <td class="rowact">
+              <form method="post" action="{{ url_for('admin_delete', token=i['token']) }}"
+                    class="confirm" data-confirm="Удалить эту ссылку и её ответ? Действие необратимо.">
+                <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+                <button class="del-btn" type="submit" title="Удалить ссылку">✕</button>
+              </form>
+            </td>
           </tr>
         {% else %}
-          <tr><td colspan="3" class="muted">Пока нет ссылок. Нажмите «Сгенерировать ссылку».</td></tr>
+          <tr><td colspan="4" class="muted">Пока нет ссылок. Нажмите «Сгенерировать ссылку».</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -111,6 +118,21 @@
       </tbody>
     </table>
   </div>
+
+  {% if invites %}
+  <div class="danger-zone">
+    <form method="post" action="{{ url_for('admin_clear_responses') }}"
+          class="confirm" data-confirm="Очистить ВСЕ ответы? Ссылки останутся, гости смогут ответить заново.">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <button class="danger-btn" type="submit">Очистить все ответы</button>
+    </form>
+    <form method="post" action="{{ url_for('admin_delete_all') }}"
+          class="confirm" data-confirm="Удалить ВСЕ ссылки и ответы? Действие необратимо.">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <button class="danger-btn" type="submit">Удалить все ссылки</button>
+    </form>
+  </div>
+  {% endif %}
 </section>
 
 <script>
@@ -134,6 +156,15 @@ document.addEventListener('click', function (e) {
     navigator.clipboard.writeText(url).then(done, function () { fallback(url); done(); });
   } else {
     fallback(url); done();
+  }
+});
+
+document.addEventListener('submit', function (e) {
+  var f = e.target;
+  if (f.classList && f.classList.contains('confirm')) {
+    if (!confirm(f.getAttribute('data-confirm') || 'Подтвердить действие?')) {
+      e.preventDefault();
+    }
   }
 });
 </script>

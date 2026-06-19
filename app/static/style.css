@@ -264,6 +264,40 @@ th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: upp
 .settings-actions { display: flex; gap: 10px; margin: 4px 0 6px; flex-wrap: wrap; }
 .settings-actions .copy { padding: 9px 14px; }
 
+.rowact { text-align: right; white-space: nowrap; }
+.del-btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--no);
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.del-btn:hover { border-color: var(--no); background: var(--no-bg); }
+
+.danger-zone {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--line);
+}
+.danger-btn {
+  border: 1px solid var(--no);
+  background: #fff;
+  color: var(--no);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.danger-btn:hover { background: var(--no-bg); }
+
 code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
 @media (max-width: 560px) {
