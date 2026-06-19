@@ -219,6 +219,11 @@ def healthz():
     return Response("ok\n", mimetype="text/plain")
 
 
+@app.route("/favicon.ico")
+def favicon():
+    return app.send_static_file("favicon.ico")
+
+
 @app.route("/i/<token>", methods=["GET"])
 def invite(token):
     inv = get_invite(token)
