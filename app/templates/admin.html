@@ -33,6 +33,38 @@
     </div>
   {% endif %}
 
+  <details class="settings"{% if saved_settings or mail_status %} open{% endif %}>
+    <summary>📧 Уведомления на e-mail</summary>
+    <div class="settings-body">
+      {% if saved_settings %}<div class="banner ok">Адреса сохранены.</div>{% endif %}
+      {% if mail_status == 'ok' %}<div class="banner ok">Письмо отправлено.</div>{% endif %}
+      {% if mail_status == 'err' %}<div class="banner err">Не удалось отправить письмо — проверьте адрес и попробуйте ещё раз.</div>{% endif %}
+      {% if mail_status == 'noaddr' %}<div class="banner err">Сначала укажите хотя бы один e-mail и сохраните.</div>{% endif %}
+      {% if not mail_enabled %}<div class="banner err">Отправка почты отключена на сервере.</div>{% endif %}
+
+      <form method="post" action="{{ url_for('admin_settings') }}">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <label class="muted small" for="notify_emails">Куда присылать уведомления (можно несколько через запятую):</label>
+        <input type="text" id="notify_emails" name="notify_emails" value="{{ notify_emails }}"
+               placeholder="you@example.com, partner@example.com" autocomplete="off" spellcheck="false">
+        <button type="submit" class="submit-btn">Сохранить</button>
+      </form>
+
+      <div class="settings-actions">
+        <form method="post" action="{{ url_for('admin_test_email') }}">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+          <button class="copy" type="submit">Отправить тест</button>
+        </form>
+        <form method="post" action="{{ url_for('admin_summary') }}">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+          <button class="copy" type="submit">Прислать сводку</button>
+        </form>
+      </div>
+      <p class="muted small">При каждом ответе гостя на эти адреса приходит письмо: имя, принял/отклонил,
+        время и текущий счёт. «Сводка» — список всех принявших и отказавшихся. Отправитель — info@kostya-i-gera.ru.</p>
+    </div>
+  </details>
+
   <h2>Ссылки</h2>
   <div class="table-wrap">
     <table>

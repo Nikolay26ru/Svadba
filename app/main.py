@@ -1,4 +1,5 @@
 """Wedding invitation service: public RSVP pages + password-protected admin."""
+import re
 import logging
 import secrets
 from datetime import datetime, timezone, timedelta
@@ -138,6 +139,60 @@ def record_attempt(ip, success):
         conn.close()
 
 
+# --------- settings & notification recipients ----------------------------
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def get_setting(key, default=""):
+    conn = db.connect()
+    try:
+        row = conn.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+        return row["value"] if row and row["value"] is not None else default
+    finally:
+        conn.close()
+
+
+def set_setting(key, value):
+    conn = db.connect()
+    try:
+        conn.execute(
+            "INSERT INTO settings (key, value) VALUES (?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (key, value),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def parse_emails(raw):
+    out = []
+    for part in re.split(r"[\s,;]+", raw or ""):
+        part = part.strip()
+        if part and EMAIL_RE.match(part) and part.lower() not in [o.lower() for o in out]:
+            out.append(part)
+    return out
+
+
+def notify_recipients():
+    """Admin-configured e-mails, or the server mailbox as a fallback."""
+    emails = parse_emails(get_setting("notify_emails", ""))
+    if not emails and config.MAIL_TO:
+        emails = [config.MAIL_TO]
+    return emails
+
+
+def response_counts():
+    conn = db.connect()
+    try:
+        rows = conn.execute("SELECT response FROM invites").fetchall()
+    finally:
+        conn.close()
+    accepted = sum(1 for r in rows if r["response"] == "accept")
+    declined = sum(1 for r in rows if r["response"] == "decline")
+    return accepted, declined, len(rows) - accepted - declined
+
+
 # --------------------------------------------------------------------------
 # Public routes
 # --------------------------------------------------------------------------
@@ -196,10 +251,16 @@ def invite_submit(token):
         conn.close()
 
     human = "Принял(а) приглашение" if response == "accept" else "Отклонил(а) приглашение"
+    accepted, declined, pending = response_counts()
     mailer.notify(
-        subject="Свадьба: ответ гостя — %s (%s)" % (name, "Принял" if response == "accept" else "Отклонил"),
-        body="Гость: %s\nОтвет: %s\nВремя (МСК): %s\nСсылка: %s\n"
-             % (name, human, fmt_dt(now_iso()), invite_url(token)),
+        subject="Свадьба: %s — %s" % (name, "Принял" if response == "accept" else "Отклонил"),
+        body=("Гость: %s\nОтвет: %s\nВремя (МСК): %s\n\n"
+              "Текущий счёт:\n"
+              "  Приняли:      %d\n"
+              "  Отклонили:    %d\n"
+              "  Не ответили:  %d\n"
+              % (name, human, fmt_dt(now_iso()), accepted, declined, pending)),
+        recipients=notify_recipients(),
     )
     return redirect(url_for("invite", token=token, saved="1"))
 
@@ -261,6 +322,10 @@ def admin_dashboard():
         declined=declined,
         pending=len(invites) - accepted - declined,
         new_token=request.args.get("new"),
+        notify_emails=get_setting("notify_emails", ""),
+        mail_enabled=config.MAIL_ENABLED,
+        saved_settings=request.args.get("saved_settings") == "1",
+        mail_status=request.args.get("mail"),
     )
 
 
@@ -279,6 +344,60 @@ def admin_generate():
     finally:
         conn.close()
     return redirect(url_for("admin_dashboard", new=token))
+
+
+@app.route(ADMIN + "/settings", methods=["POST"])
+@admin_required
+def admin_settings():
+    check_csrf()
+    emails = parse_emails(request.form.get("notify_emails", ""))
+    set_setting("notify_emails", ", ".join(emails))
+    return redirect(url_for("admin_dashboard", saved_settings="1"))
+
+
+@app.route(ADMIN + "/test-email", methods=["POST"])
+@admin_required
+def admin_test_email():
+    check_csrf()
+    recipients = notify_recipients()
+    if not recipients:
+        return redirect(url_for("admin_dashboard", mail="noaddr"))
+    ok, _ = mailer.send_now(
+        subject="Свадьба: тестовое письмо",
+        body=("Это тестовое уведомление с сайта приглашений kostya-i-gera.ru.\n"
+              "Если вы его получили — уведомления настроены правильно.\n"),
+        recipients=recipients,
+    )
+    return redirect(url_for("admin_dashboard", mail=("ok" if ok else "err")))
+
+
+@app.route(ADMIN + "/summary", methods=["POST"])
+@admin_required
+def admin_summary():
+    check_csrf()
+    recipients = notify_recipients()
+    if not recipients:
+        return redirect(url_for("admin_dashboard", mail="noaddr"))
+    conn = db.connect()
+    try:
+        invites = conn.execute("SELECT * FROM invites ORDER BY responded_at").fetchall()
+    finally:
+        conn.close()
+    acc = [i["guest_name"] for i in invites if i["response"] == "accept" and i["guest_name"]]
+    dec = [i["guest_name"] for i in invites if i["response"] == "decline" and i["guest_name"]]
+    accepted, declined, pending = response_counts()
+    body = (
+        "Сводка ответов на %s (МСК)\n\n"
+        "ПРИНЯЛИ (%d):\n%s\n\n"
+        "ОТКЛОНИЛИ (%d):\n%s\n\n"
+        "Не ответили: %d\n"
+        % (fmt_dt(now_iso()),
+           accepted, "\n".join("  • " + n for n in acc) or "  —",
+           declined, "\n".join("  • " + n for n in dec) or "  —",
+           pending)
+    )
+    ok, _ = mailer.send_now("Свадьба: сводка ответов", body, recipients)
+    return redirect(url_for("admin_dashboard", mail=("ok" if ok else "err")))
 
 
 @app.route(ADMIN + "/logout", methods=["POST"])

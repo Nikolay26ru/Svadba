@@ -241,6 +241,29 @@ th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: upp
 .badge.no { background: var(--no-bg); color: var(--no); }
 .badge.wait { background: var(--wait-bg); color: var(--wait); }
 
+.settings {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #faf6f0;
+  margin: 4px 0 18px;
+  padding: 0 14px;
+}
+.settings > summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 12px 0;
+  list-style: none;
+  user-select: none;
+}
+.settings > summary::-webkit-details-marker { display: none; }
+.settings > summary::before { content: "▸ "; color: var(--muted); }
+.settings[open] > summary::before { content: "▾ "; }
+.settings-body { padding: 4px 0 14px; }
+.settings-body input[type="text"] { margin-top: 6px; }
+.settings-body .submit-btn { width: auto; padding: 11px 18px; }
+.settings-actions { display: flex; gap: 10px; margin: 4px 0 6px; flex-wrap: wrap; }
+.settings-actions .copy { padding: 9px 14px; }
+
 code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
 @media (max-width: 560px) {
